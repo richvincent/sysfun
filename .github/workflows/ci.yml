@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --release -- -D warnings
+      - run: cargo build --release
+      - name: smoke-test every view headlessly
+        run: |
+          for v in overview cpu mem disk net wifi bat temp ps; do
+            ./target/release/sysfun --$v --once --width 100 --height 30 > /dev/null
+          done
