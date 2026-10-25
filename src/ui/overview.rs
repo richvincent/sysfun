@@ -199,7 +199,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
                 frame.render_widget(
                     Paragraph::new(Line::from(vec![
                         fg("Thermal ", th.label),
-                        fg(format!("{:.1}°C", hot.value), th.level(hot.value)),
+                        fg(temp(hot.value, app.cfg.fahrenheit), th.level(hot.value)),
                         dim(format!("  {} ({})", hot.label, hot.chip)),
                         dim(if fans.is_empty() { String::new() } else { format!("  · fans {}", fans.join(", ")) }),
                     ])),
@@ -247,7 +247,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
             .map(|t| {
                 Row::new(vec![
                     Cell::from(Span::styled(t.label.clone(), Style::new().fg(th.label))),
-                    Cell::from(Span::styled(format!("{:>6.1}°C", t.value), Style::new().fg(th.level(t.value)))),
+                    Cell::from(Span::styled(format!("{:>7}", temp(t.value, app.cfg.fahrenheit)), Style::new().fg(th.level(t.value)))),
                     Cell::from(Span::styled(bar(t.value / 100.0, 10), Style::new().fg(th.level(t.value)))),
                 ])
             })

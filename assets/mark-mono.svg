@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc" color="#172D35">
+  <title id="title">sysfun — Single-ink smile gauge</title>
+  <desc id="desc">An outlined terminal panel with two window dots, a symmetric smile, and five gauge ticks. The icon inherits the current text color.</desc>
+  <rect x="12" y="18" width="104" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/>
+  <path d="M28 40H100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="28" cy="29" r="2.5" fill="currentColor"/>
+  <circle cx="38" cy="29" r="2.5" fill="currentColor"/>
+  <path d="M30 60C42 92 86 92 98 60" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="30" cy="60" r="4" fill="currentColor"/>
+  <circle cx="98" cy="60" r="4" fill="currentColor"/>
+  <path d="M36 102V99M50 102V97M64 102V95M78 102V97M92 102V99" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+</svg>

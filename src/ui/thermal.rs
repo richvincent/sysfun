@@ -8,6 +8,7 @@ use ratatui::widgets::{Cell, Paragraph, Row, Table};
 pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
     let s = app.snap.as_ref().unwrap();
     let t = &s.thermal;
+    let f = app.cfg.fahrenheit;
     let rows = Layout::vertical([Constraint::Length(6), Constraint::Min(6), Constraint::Length(7)]).split(area);
 
     {
@@ -28,7 +29,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
                 };
                 lines.push(Line::from(vec![
                     fg("Hottest  ", th.label),
-                    bold(format!("{:.1} °C", h.value), th.level(h.value)),
+                    bold(temp(h.value, f), th.level(h.value)),
                     dim(format!("  {} on {}", h.label, h.chip)),
                 ]));
                 lines.push(Line::from(vec![fg("Verdict  ", th.label), fg(words.0, words.1)]));
@@ -64,7 +65,11 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
             .iter()
             .map(|x| {
                 let (txt, color, ratio) = match x.kind {
-                    Kind::Temp => (format!("{:>7.1} °C", x.value), th.level(x.value), x.value / x.crit.or(x.max).unwrap_or(100.0).max(1.0)),
+                    Kind::Temp => (
+                        format!("{:>7.1} {}", temp_val(x.value, f), temp_unit(f)),
+                        th.level(x.value),
+                        x.value / x.crit.or(x.max).unwrap_or(100.0).max(1.0),
+                    ),
                     Kind::Fan => (format!("{:>6.0} RPM", x.value), Color::White, x.value / x.max.unwrap_or(6000.0).max(1.0)),
                     Kind::Volt => (format!("{:>7.3} V", x.value), Color::White, 0.0),
                     Kind::Curr => (format!("{:>7.3} A", x.value), Color::White, 0.0),
@@ -76,8 +81,16 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
                     Cell::from(x.kind.name()),
                     Cell::from(Span::styled(txt, Style::new().fg(color))),
                     Cell::from(Span::styled(if ratio > 0.0 { bar(ratio, 14) } else { String::new() }, Style::new().fg(color))),
-                    Cell::from(optf(x.max, 0, x.kind.unit())),
-                    Cell::from(optf(x.crit, 0, x.kind.unit())),
+                    Cell::from(if x.kind == Kind::Temp {
+                        optf(x.max.map(|v| temp_val(v, f)), 0, temp_unit(f))
+                    } else {
+                        optf(x.max, 0, x.kind.unit())
+                    }),
+                    Cell::from(if x.kind == Kind::Temp {
+                        optf(x.crit.map(|v| temp_val(v, f)), 0, temp_unit(f))
+                    } else {
+                        optf(x.crit, 0, x.kind.unit())
+                    }),
                 ])
             })
             .collect();
@@ -105,7 +118,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
         frame.render_widget(b, cols[0]);
         let mut kv: Vec<(&str, String)> = Vec::new();
         for (name, v) in &t.zones {
-            kv.push((Box::leak(name.clone().into_boxed_str()), format!("{:.1} °C", v)));
+            kv.push((Box::leak(name.clone().into_boxed_str()), temp(*v, f)));
         }
         for (name, cur, max) in t.cooling.iter().take(4) {
             kv.push((Box::leak(format!("cooling {}", name).into_boxed_str()), format!("state {}/{}", cur, max)));
@@ -121,7 +134,16 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
         let r = Layout::vertical([Constraint::Length(1), Constraint::Min(2)]).split(inner);
         let hist = tail(&app.hist.temp, r[1].width as usize);
         let (mn, mx) = (hist.iter().min().copied().unwrap_or(0) as f64 / 10.0, hist.iter().max().copied().unwrap_or(0) as f64 / 10.0);
-        frame.render_widget(Paragraph::new(Line::from(dim(format!("range {:.1} – {:.1} °C over {} samples", mn, mx, hist.len())))), r[0]);
+        frame.render_widget(
+            Paragraph::new(Line::from(dim(format!(
+                "range {:.1} – {:.1} {} over {} samples",
+                temp_val(mn, f),
+                temp_val(mx, f),
+                temp_unit(f),
+                hist.len()
+            )))),
+            r[0],
+        );
         frame.render_widget(spark(&hist, None, th.accent), r[1]);
     }
 }

@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-horizontal-dark.svg">
+  <img src="assets/logo-horizontal-light.svg" alt="sysfun: a terminal panel whose gauge draws a smile, with the tagline see your machine" width="520">
+</picture>
+
 # sysfun
 
 Fast, elegant system information in your terminal. A Rust TUI for Linux.
@@ -20,6 +25,8 @@ sysfun --temp     # every hwmon sensor, thermal zones, cooling devices
 sysfun --ps       # processes sorted by cpu / memory / pid / name
 sysfun --once     # print one frame as plain text and exit (great for pasting into a ticket)
 sysfun -i 250     # refresh every 250 ms
+sysfun --settings    # open straight into the Settings tab
+sysfun --no-config   # ignore ~/.config/sysfun/config.toml for this run
 ```
 
 `sysfun --help` lists every flag and alias.
@@ -29,6 +36,7 @@ sysfun -i 250     # refresh every 250 ms
 - [Install](#install)
 - [Views](#views)
 - [Keys](#keys)
+- [Settings](#settings)
 - [Non-interactive use](#non-interactive-use)
 - [Design principles](#design-principles)
 - [Performance](#performance)
@@ -56,7 +64,8 @@ cargo install --path .
 ```
 
 The result is a single static-ish binary that links only `libc` and `libgcc`.
-It needs no configuration files and writes nothing to disk.
+It needs no configuration to run. The only file it ever writes is the
+settings file, and only when you change something in the Settings tab.
 
 ## Views
 
@@ -108,15 +117,61 @@ From top to bottom:
 | key | action |
 |-----|--------|
 | `Tab` `→` `l` / `Shift-Tab` `←` `h` | next / previous view |
-| `1` … `9` | jump to a view |
+| `1` … `9` | jump to the n-th tab in the bar |
+| `,` | open or close Settings (also the ⚙ icon at the right of the tab bar) |
 | `↑` `↓` `j` `k` `Home` | move selection in the process and Wi-Fi tables |
 | `c` `m` `p` `n` | sort processes by cpu, memory, pid or name |
 | `s` | rescan Wi-Fi networks (via NetworkManager) |
 | `space` | pause / resume sampling |
 | `r` | sample now |
 | `+` `-` | halve / double the refresh interval |
-| `?` | help overlay |
+| `?` | help overlay; on terminals 40 rows or taller it opens with an About block showing the logo, version and repo |
 | `q` `Esc` `Ctrl-C` | quit |
+
+Mouse works too: click a tab or the ⚙ icon to switch view, click a row in the
+process or Wi-Fi table to select it, click a process column header (PID,
+CPU%, MEM%, RSS, COMMAND) to sort by it, and use the wheel to move the
+selection, or to change view when the pointer is over the tab bar. Clicking
+anywhere closes the help overlay. The mouse can be turned off in Settings if
+you prefer your terminal's own text selection.
+
+## Settings
+
+Press `,` (or click ⚙) for the Settings tab. Every change saves immediately
+to `~/.config/sysfun/config.toml` (or `$XDG_CONFIG_HOME/sysfun/config.toml`),
+and takes effect at once.
+
+| setting | what it does | keys |
+|---------|--------------|------|
+| Tab bar | show or hide each view, and reorder them. The numbers `1`–`9` follow the new order. At least one tab stays visible. | `space` show/hide · `←` `→`, `K` `J`, `[` `]` or `Shift-↑↓` move |
+| Default view | the tab shown at launch when no flag is given | `←` `→` |
+| Refresh every | 250 ms to 10 s sampling interval | `←` `→` |
+| Temperature | °C or °F, applied to every temperature on screen | `←` `→` |
+| Theme | a colour per view (default) or monochrome accents with status colours only | `←` `→` |
+| Mouse | capture clicks and wheel, or leave the mouse to the terminal | `←` `→` |
+| Hidden Wi-Fi networks | list access points that do not broadcast a name | `←` `→` |
+
+`d` restores the defaults. Clicking a row selects it; clicking it again acts
+on it. `Esc` leaves Settings for your default view.
+
+The file is a small TOML document with a comment above each key, so it is
+easy to edit by hand. A line that cannot be parsed is reported in the
+Settings tab and that key falls back to its default; the app always starts.
+Command-line flags win over the file: `--wifi` overrides the default view and
+`-i` overrides the interval for that run. `--config <path>` points at a
+different file and `--no-config` ignores the file entirely without writing
+anything.
+
+```toml
+tabs = ["overview", "wifi", "power", "cpu", "memory", "disk", "network", "thermal", "processes"]
+hidden_tabs = ["thermal"]
+default_view = "wifi"
+interval_ms = 1000
+temperature = "fahrenheit"
+theme = "default"
+mouse = true
+show_hidden_networks = false
+```
 
 The footer shows the host, the tick interval, how long the last sample and
 draw took, and which collector was slowest.
@@ -151,6 +206,8 @@ every sample, which is useful when tuning or when a view feels slow.
   sensors: every view explains what is missing instead of failing.
 - **Fit any terminal.** Layouts are tested from 80x24 up. Columns are dropped
   before text is truncated where it matters.
+- **Settings are a file you can read.** One small TOML document, commented,
+  written atomically, never required.
 
 ## Performance
 
@@ -180,7 +237,8 @@ the management controller) and spawning `iw`. To keep that off the main tick:
 - No root required. Everything read is world-readable sysfs/procfs; unmounted
   partition types come from the udev database rather than `blkid`.
 - **No network access, ever.** sysfun opens no sockets, phones nothing home,
-  and works fully offline. It writes nothing to disk and has no config file.
+  and works fully offline. The only thing it writes is its own settings file,
+  and only when you change a setting.
 
 ## Troubleshooting
 
@@ -204,6 +262,15 @@ ticks.
 
 **The battery shows "(estimated)" time.** The kernel driver did not supply a
 time-to-empty/full, so it is computed from energy and current power draw.
+
+## Brand
+
+Logo and icon files, including PNG exports and a single-colour mark, live in
+[`assets/`](assets/README.md). The mark also appears inside the TUI: a `◡`
+in the tab-bar badge echoes the smile, and the full-colour icon is drawn with
+half-block cells in the help overlay and at the top of Settings when the
+terminal is tall enough. `tools/gen-logo.py` bakes `assets/mark.svg` into
+`src/ui/logo_data.rs`; run it after changing the mark.
 
 ## License
 

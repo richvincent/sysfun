@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">sysfun — Smile gauge</title>
+  <desc id="desc">An ivory tile frames a dark terminal panel with amber and teal window dots, a symmetric teal smile with amber endpoints, and five gauge ticks.</desc>
+  <rect x="2" y="2" width="124" height="124" rx="26" fill="#FAF7EF"/>
+  <rect x="12" y="18" width="104" height="92" rx="18" fill="#172D35"/>
+  <path d="M28 40H100" fill="none" stroke="#486169" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="28" cy="29" r="2.5" fill="#E6BE5A"/>
+  <circle cx="38" cy="29" r="2.5" fill="#5EC4C4"/>
+  <path d="M30 60C42 92 86 92 98 60" fill="none" stroke="#5EC4C4" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="30" cy="60" r="4" fill="#E6BE5A"/>
+  <circle cx="98" cy="60" r="4" fill="#E6BE5A"/>
+  <path d="M36 102V99M50 102V97M64 102V95M78 102V97M92 102V99" fill="none" stroke="#486169" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -16,17 +16,22 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub fn for_view(v: View) -> Self {
-        let accent = match v {
-            View::Overview => Color::Rgb(94, 196, 196),
-            View::Cpu => Color::Rgb(199, 125, 255),
-            View::Mem => Color::Rgb(120, 200, 120),
-            View::Disk => Color::Rgb(230, 190, 90),
-            View::Net => Color::Rgb(100, 160, 255),
-            View::Wifi => Color::Rgb(90, 200, 240),
-            View::Power => Color::Rgb(150, 220, 120),
-            View::Thermal => Color::Rgb(255, 130, 110),
-            View::Procs => Color::Rgb(220, 220, 220),
+    pub fn for_view(v: View, mono: bool) -> Self {
+        let accent = if mono {
+            Color::Rgb(200, 200, 200)
+        } else {
+            match v {
+                View::Overview => Color::Rgb(94, 196, 196),
+                View::Cpu => Color::Rgb(199, 125, 255),
+                View::Mem => Color::Rgb(120, 200, 120),
+                View::Disk => Color::Rgb(230, 190, 90),
+                View::Net => Color::Rgb(100, 160, 255),
+                View::Wifi => Color::Rgb(90, 200, 240),
+                View::Power => Color::Rgb(150, 220, 120),
+                View::Thermal => Color::Rgb(255, 130, 110),
+                View::Procs => Color::Rgb(220, 220, 220),
+                View::Settings => Color::Rgb(220, 190, 120),
+            }
         };
         Theme {
             accent,

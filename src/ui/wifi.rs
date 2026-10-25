@@ -251,7 +251,9 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
 
     // ── 3. nearby networks ───────────────────────────────────────────
     {
-        let n = w.scan.len();
+        let scan: Vec<&crate::collect::wifi::Bss> =
+            w.scan.iter().filter(|b| app.cfg.show_hidden_networks || !b.ssid.is_empty() || b.associated).collect();
+        let n = scan.len();
         let age = w
             .scan_age_s
             .map(|a| format!("{} network{} · cache {:.0}s old · ↑↓ to browse", n, if n == 1 { "" } else { "s" }, a))
@@ -260,8 +262,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
         let hdr =
             Row::new(vec!["", "SSID", "BSSID", "CH", "BAND", "WIDTH", "SIGNAL", "", "SECURITY", "STANDARD", "CLIENTS", "AIRTIME", "SEEN"])
                 .style(Style::new().fg(th.muted));
-        let trs: Vec<Row> = w
-            .scan
+        let trs: Vec<Row> = scan
             .iter()
             .map(|b| {
                 let (q, bars, color, _) = quality(b.signal.round() as i32);
@@ -318,11 +319,14 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
         .block(b)
         .row_highlight_style(Style::new().bg(Color::Rgb(40, 50, 60)))
         .highlight_symbol("▶");
-        if !w.scan.is_empty() {
-            app.wifi_sel = app.wifi_sel.min(w.scan.len() - 1);
+        if !scan.is_empty() {
+            app.wifi_sel = app.wifi_sel.min(scan.len() - 1);
         }
-        let mut st = TableState::default().with_selected(if w.scan.is_empty() { None } else { Some(app.wifi_sel) });
+        let mut st = TableState::default().with_selected(if scan.is_empty() { None } else { Some(app.wifi_sel) });
         frame.render_stateful_widget(t, rows[2], &mut st);
+        app.hit.wifi_rows =
+            Some(Rect::new(rows[2].x + 1, rows[2].y + 2, rows[2].width.saturating_sub(2), rows[2].height.saturating_sub(3)));
+        app.hit.wifi_offset = st.offset();
     }
 
     // ── 4. for the wireless engineer ─────────────────────────────────

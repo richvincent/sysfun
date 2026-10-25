@@ -6,8 +6,9 @@ collecting data, holding application state, and drawing.
 ```
 src/
 ├── main.rs            CLI (clap), terminal setup, event loop, --once renderer
-├── app.rs             App state: current view, latest Snapshot, history ring buffers, selections
-├── util.rs            Formatting (bytes, rates, durations, bars) and tiny file/parse helpers
+├── app.rs             App state: view/tab order, latest Snapshot, history ring buffers, selections, settings actions, mouse hit-testing
+├── config.rs          Config struct, tiny TOML-subset parser/writer, default path, atomic save
+├── util.rs            Formatting (bytes, rates, durations, bars, °C/°F) and tiny file/parse helpers
 ├── collect/
 │   ├── mod.rs         Snapshot struct, Sampler (one tick = one Snapshot), background thread, Cmd channel
 │   ├── host.rs        Static facts read once: hostname, OS, kernel, machine model, CPU model
@@ -21,7 +22,10 @@ src/
 │   └── proc.rs        /proc/<pid>/stat deltas, cmdline cache, uid→user map
 └── ui/
     ├── mod.rs         Frame layout: header tabs, body dispatch, footer, help overlay
-    ├── widgets.rs     Theme (per-view accent colours), section blocks, gauges, sparklines, kv tables
+    ├── widgets.rs     Theme (per-view accent colours, mono option), section blocks, gauges, sparklines, kv tables
+    ├── settings.rs    Settings view: tab order/visibility list and preference rows
+    ├── logo.rs        Draws the mark with half-block cells (▀▄), colour or mono
+    ├── logo_data.rs   Generated RGBA pixel tables (tools/gen-logo.py from assets/mark.svg)
     └── {overview,cpu,mem,disk,net,wifi,power,thermal,procs}.rs   one draw() per view
 ```
 
@@ -52,6 +56,32 @@ src/
 - **History** lives in the UI (`app::History`): fixed-size ring buffers of
   `u64` fed from each snapshot, rendered as sparklines. Keeping history out
   of the collectors keeps `Snapshot` cheap to clone.
+
+## Settings and input
+
+- `config::Config` is loaded once at startup (`--config` picks the file,
+  `--no-config` skips it). Command-line flags override the default view and
+  interval for the run but are never written back.
+- `app.tabs` is the ordered list of visible views derived from the config;
+  the tab bar, digit keys and Tab/Shift-Tab all use it. `View::Settings` is a
+  real `View` variant but is not in `View::ALL`, so it never appears as a
+  numbered tab; it is reached by `,`, the ⚙ icon, or wrapping past the ends.
+- Settings rows are `SettingsItem`s (one per tab, then the preferences).
+  `App::settings_toggle / settings_cycle / settings_reorder / settings_reset`
+  mutate `cfg`, call `save_cfg()` (normalize, rebuild `tabs`, atomic write),
+  and push `Effect`s (interval change, mouse on/off) that the main loop
+  applies, because only the main loop owns the sampler channel and the
+  terminal.
+- Key routing in `main.rs` checks Settings-specific bindings first (space,
+  arrows, `[`/`]`, `K`/`J`, `d`) and falls through to the global ones.
+- Mouse: every draw records hit rectangles in `app.hit` (tabs, gear, table
+  rows and the process header, settings rows). `App::click` and `App::scroll`
+  map events back to actions, so hit-testing is always consistent with what
+  was drawn, at any terminal size.
+- The config format is a TOML subset: `key = "string" | integer | bool |
+  ["string", ...]`, with `#` comments. The parser reports problems per line
+  and keeps defaults for those keys; `Config::render` writes a commented file.
+  A unit test round-trips every field.
 
 ## Rendering
 
@@ -104,6 +134,24 @@ src/
 - cfg80211 expires BSS entries ~30 s after last seen, which is why the NM
   cache is merged and why `s` triggers `nmcli dev wifi rescan` (works
   unprivileged through polkit for local sessions).
+
+## Logo in the terminal
+
+`tools/gen-logo.py` renders `assets/mark.svg` at 24 px and 16 px with
+rsvg-convert, dumps straight-alpha RGBA through ImageMagick, and writes the
+pixels into `src/ui/logo_data.rs` as `&'static [u32]` tables. `ui::logo::draw`
+maps every column and pair of rows to one cell: `▀` with the top pixel as
+foreground and the bottom pixel as background (or `▄` when only the bottom
+pixel is opaque), so a 24 px mark takes 24 columns by 12 rows. Pixels with
+alpha below 128 are left untouched, which keeps the tile's rounded corners
+transparent on any terminal background. The mono theme converts each pixel
+to its luma. The help overlay shows the 24 px mark when the terminal has at
+least 40 rows; Settings shows the 16 px one at 34 rows and 100 columns.
+
+The hidden `--screenshot <file.ppm>` flag (with `--once`) writes the frame
+as a 2×4-pixel-per-cell colour mosaic, which is how the half-block rendering
+is checked without a terminal emulator; `--show-help` draws the overlay in
+that frame.
 
 ## Adding a view
 

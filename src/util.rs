@@ -195,3 +195,25 @@ pub fn clock() -> String {
     }
     format!("{:02}:{:02}:{:02}", tm.tm_hour, tm.tm_min, tm.tm_sec)
 }
+
+/// Convert a Celsius reading for display according to the user's unit preference.
+pub fn temp_val(c: f64, fahrenheit: bool) -> f64 {
+    if fahrenheit {
+        c * 9.0 / 5.0 + 32.0
+    } else {
+        c
+    }
+}
+
+pub fn temp_unit(fahrenheit: bool) -> &'static str {
+    if fahrenheit {
+        "°F"
+    } else {
+        "°C"
+    }
+}
+
+/// "32.9°C" or "91.2°F".
+pub fn temp(c: f64, fahrenheit: bool) -> String {
+    format!("{:.1}{}", temp_val(c, fahrenheit), temp_unit(fahrenheit))
+}

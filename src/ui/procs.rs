@@ -108,4 +108,37 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
     .highlight_symbol("▶");
     let mut st = TableState::default().with_selected(if list.is_empty() { None } else { Some(app.proc_sel - start) });
     frame.render_stateful_widget(t, rows[1], &mut st);
+    // Hit areas: header row sits just inside the top border, data rows below it.
+    app.hit.proc_header = Some(Rect::new(rows[1].x + 1, rows[1].y + 1, rows[1].width.saturating_sub(2), 1));
+    app.hit.proc_rows = Some(Rect::new(rows[1].x + 1, rows[1].y + 2, rows[1].width.saturating_sub(2), rows[1].height.saturating_sub(3)));
+    app.hit.proc_start = start;
+}
+
+/// Map an x offset within the header row to a sort key. Offsets mirror the column widths above
+/// plus one cell for the highlight symbol and one cell of spacing between columns.
+pub fn header_sort(x: u16) -> Option<ProcSort> {
+    let widths: [(u16, Option<ProcSort>); 11] = [
+        (7, Some(ProcSort::Pid)),
+        (11, None),
+        (1, None),
+        (5, Some(ProcSort::Cpu)),
+        (4, Some(ProcSort::Mem)),
+        (9, Some(ProcSort::Mem)),
+        (4, None),
+        (3, None),
+        (8, None),
+        (7, None),
+        (u16::MAX, Some(ProcSort::Name)),
+    ];
+    let mut cursor = 1u16; // highlight symbol column
+    for (w, sort) in widths {
+        if x < cursor {
+            return None;
+        }
+        if x < cursor.saturating_add(w) {
+            return sort;
+        }
+        cursor = cursor.saturating_add(w).saturating_add(1);
+    }
+    None
 }

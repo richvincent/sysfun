@@ -29,6 +29,12 @@ Please include a `--once` capture (trim anything personal such as SSIDs or
 serial numbers) when reporting a layout bug, along with your terminal size
 and distribution.
 
+## Changing the logo
+
+Edit `assets/mark.svg`, then run `python3 tools/gen-logo.py` (needs
+`rsvg-convert` and ImageMagick) to regenerate `src/ui/logo_data.rs`, and
+re-export the PNGs as described in `assets/README.md`.
+
 ## Adding a collector or view
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#adding-a-view).

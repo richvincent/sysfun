@@ -183,7 +183,7 @@ pub fn draw(frame: &mut Frame, area: Rect, app: &mut App, th: &Theme) {
                     "cells (est.)",
                     bat.voltage_max_design_v.map(|v| format!("{}S", (v / 4.3).round().max(1.0) as u32)).unwrap_or_else(|| "—".into()),
                 ),
-                ("temperature", optf(bat.temp_c, 1, " °C")),
+                ("temperature", bat.temp_c.map(|c| temp(c, app.cfg.fahrenheit)).unwrap_or_else(|| "—".into())),
                 (
                     "charge limit",
                     match (bat.start_threshold, bat.end_threshold) {
